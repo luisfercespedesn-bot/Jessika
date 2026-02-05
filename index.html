@@ -2,15 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Devocional 365 - Reflexiones Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Devocional 365 - Mobile Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
             --bg-primary: #000000;
             --text-primary: #FFFFFF;
             --accent: #FFFF00; 
-            --focus-outline: #00FF00;
             --recording: #FF3B30;
             --paused: #FF9500;
         }
@@ -18,172 +17,144 @@
         body {
             background-color: var(--bg-primary);
             color: var(--text-primary);
-            font-family: system-ui, -apple-system, sans-serif;
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
             -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
         }
 
-        *:focus {
-            outline: 4px solid var(--focus-outline) !important;
-            outline-offset: 2px;
+        /* Evitar zoom automático en inputs en iOS */
+        input, textarea, select {
+            font-size: 16px !important;
         }
 
         .high-contrast-btn {
             background-color: var(--accent);
             color: #000;
             font-weight: 800;
-            padding: 1rem;
-            border-radius: 16px;
+            padding: 0.8rem;
+            border-radius: 12px;
             text-transform: uppercase;
-            border: 3px solid #000;
+            border: 2px solid #000;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
+            width: 100%;
+            min-height: 50px;
         }
 
-        .btn-record { background-color: #2563eb; color: white; }
-        .btn-pause { background-color: var(--paused); color: black; }
-        .btn-save { background-color: #059669; color: white; }
-        .btn-text-save { background-color: #4f46e5; color: white; }
+        .btn-record { background-color: #2563eb; color: white; border: none; }
+        .btn-pause { background-color: var(--paused); color: black; border: none; }
+        .btn-save { background-color: #059669; color: white; border: none; }
 
         .recording-active {
-            animation: pulse-red 1.2s infinite;
-            border-color: white !important;
+            animation: pulse-red 1.5s infinite;
         }
 
         @keyframes pulse-red {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
-            70% { transform: scale(0.98); box-shadow: 0 0 0 15px rgba(255, 59, 48, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.98); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         .devotional-card {
-            border: 4px solid var(--accent);
-            padding: 1.5rem;
-            border-radius: 24px;
+            border: 3px solid var(--accent);
+            padding: 1.2rem;
+            border-radius: 20px;
             background-color: #0a0a0a;
         }
 
         .note-card {
-            background-color: #111;
-            border-left: 8px solid var(--accent);
-            padding: 1.25rem;
-            margin-top: 1rem;
-            border-radius: 12px;
+            background-color: #161616;
+            border-left: 6px solid var(--accent);
+            padding: 1rem;
+            margin-top: 0.8rem;
+            border-radius: 10px;
         }
 
         .transcript-preview {
-            background-color: #1a1a1a;
-            border: 2px dashed #444;
-            padding: 1rem;
-            border-radius: 12px;
-            min-height: 60px;
-            font-style: italic;
-            color: #ccc;
-        }
-
-        textarea {
             background-color: #111;
-            color: white;
-            border: 2px solid #333;
-            border-radius: 12px;
-            padding: 1rem;
-            width: 100%;
-            font-size: 1.1rem;
-            resize: vertical;
-        }
-
-        textarea:focus {
-            border-color: var(--accent);
+            border: 1px dashed #555;
+            padding: 0.8rem;
+            border-radius: 10px;
+            min-height: 50px;
+            font-size: 0.9rem;
+            color: #aaa;
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-3 md:p-8">
 
-    <header class="max-w-4xl mx-auto mb-6 text-center">
-        <h1 class="text-4xl md:text-5xl font-black mb-6" tabindex="0">Mi Devocional Diario</h1>
+    <header class="max-w-xl mx-auto mb-4 text-center">
+        <h1 class="text-3xl font-black mb-4 tracking-tight">Devocional 365</h1>
         
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <button onclick="leerDevocional()" class="high-contrast-btn">🔊 Oír</button>
-            <button onclick="cambiarFuente(4)" class="high-contrast-btn">A+ Letra</button>
-            <button onclick="cambiarFuente(-4)" class="high-contrast-btn">A- Letra</button>
-            <button onclick="detenerVoz()" class="high-contrast-btn bg-white">🛑 Parar</button>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+            <button onclick="leerDevocional()" class="high-contrast-btn text-sm">🔊 Escuchar</button>
+            <button onclick="detenerVoz()" class="high-contrast-btn bg-white text-sm">🛑 Parar</button>
         </div>
 
-        <section class="bg-zinc-900 p-4 rounded-2xl flex items-center justify-between gap-4 border-2 border-zinc-700">
-            <button onclick="navegarFecha(-1)" class="high-contrast-btn px-4">⬅️</button>
+        <section class="bg-zinc-900 p-3 rounded-xl flex items-center justify-between border border-zinc-700">
+            <button onclick="navegarFecha(-1)" class="p-2 text-xl">⬅️</button>
             <div class="text-center">
-                <p id="fecha-display" class="text-xl font-bold text-yellow-400" aria-live="polite">Cargando...</p>
-                <button onclick="irAHoy()" class="text-blue-400 underline text-sm font-bold">Volver a Hoy</button>
+                <p id="fecha-display" class="font-bold text-yellow-400 text-sm">Cargando...</p>
             </div>
-            <button onclick="navegarFecha(1)" class="high-contrast-btn px-4">➡️</button>
+            <button onclick="navegarFecha(1)" class="p-2 text-xl">➡️</button>
         </section>
     </header>
 
-    <main class="max-w-4xl mx-auto">
-        <article id="devocional-contenedor" class="devotional-card mb-8">
-            <h2 id="dev-titulo" class="text-2xl font-black mb-2 text-yellow-400">Título</h2>
-            <p id="dev-cita" class="text-lg italic mb-4 text-gray-400">Cita</p>
-            <div id="dev-cuerpo" class="text-xl leading-relaxed"></div>
+    <main class="max-w-xl mx-auto space-y-4">
+        <article id="devocional-contenedor" class="devotional-card">
+            <h2 id="dev-titulo" class="text-xl font-bold mb-1 text-yellow-400">Cargando...</h2>
+            <p id="dev-cita" class="text-sm italic mb-3 text-zinc-500"></p>
+            <div id="dev-cuerpo" class="text-lg font-medium leading-snug"></div>
         </article>
 
-        <!-- SECCIÓN DE REFLEXIONES -->
-        <section class="space-y-6">
+        <!-- REFLEXIÓN POR VOZ -->
+        <section class="p-5 bg-zinc-900 rounded-2xl border border-blue-900 shadow-lg">
+            <h2 class="text-lg font-bold mb-3 flex items-center gap-2">🎤 Nota de Voz</h2>
             
-            <!-- REFLEXIÓN POR VOZ -->
-            <div class="p-6 bg-zinc-900 rounded-3xl border-2 border-blue-500 shadow-2xl">
-                <h2 class="text-2xl font-bold mb-4 text-center">🎤 Reflexión de Voz</h2>
-                
-                <div class="flex flex-col gap-4">
-                    <div id="status-badge" class="text-center font-bold py-1 px-4 rounded-full bg-zinc-800 text-zinc-400 self-center text-sm">
-                        Estado: Esperando
-                    </div>
+            <div class="space-y-3">
+                <div id="status-badge" class="text-center text-xs font-bold text-zinc-500">Listo para grabar</div>
 
-                    <div id="area-transcripcion" class="transcript-preview mb-2" aria-live="polite">
-                        Su voz aparecerá aquí...
-                    </div>
+                <div id="area-transcripcion" class="transcript-preview" aria-live="polite">
+                    Pulsa Grabar para empezar...
+                </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <button id="btn-start" onclick="iniciarGrabacion()" class="high-contrast-btn btn-record h-16 text-lg">
-                            🎤 GRABAR
-                        </button>
-                        <button id="btn-pause" onclick="pausarGrabacion()" class="high-contrast-btn btn-pause h-16 text-lg hidden">
-                            ⏸️ PAUSAR
-                        </button>
-                        <button id="btn-save" onclick="finalizarYGuardarVoz()" class="high-contrast-btn btn-save h-16 text-lg hidden">
-                            💾 GUARDAR VOZ
-                        </button>
+                <div class="flex flex-col gap-2">
+                    <button id="btn-start" onclick="iniciarGrabacion()" class="high-contrast-btn btn-record">
+                        INICIAR GRABACIÓN
+                    </button>
+                    
+                    <div id="controles-activos" class="hidden grid grid-cols-2 gap-2">
+                        <button id="btn-pause" onclick="pausarGrabacion()" class="high-contrast-btn btn-pause">⏸️ PAUSA</button>
+                        <button id="btn-save" onclick="finalizarYGuardarVoz()" class="high-contrast-btn btn-save">💾 GUARDAR</button>
                     </div>
                     
-                    <button id="btn-cancel" onclick="cancelarGrabacion()" class="text-red-400 font-bold underline mt-2 hidden">
-                        Cancelar actual
+                    <button id="btn-cancel" onclick="cancelarGrabacion()" class="text-red-500 text-xs font-bold underline text-center hidden">
+                        CANCELAR
                     </button>
                 </div>
-            </div>
-
-            <!-- REFLEXIÓN ESCRITA -->
-            <div class="p-6 bg-zinc-900 rounded-3xl border-2 border-indigo-500 shadow-2xl">
-                <h2 class="text-2xl font-bold mb-4 text-center">✏️ Escribir Reflexión</h2>
-                <div class="flex flex-col gap-4">
-                    <textarea id="texto-reflexion" rows="4" placeholder="Escribe aquí tus pensamientos con el teclado..."></textarea>
-                    <button onclick="guardarReflexionEscrita()" class="high-contrast-btn btn-text-save h-16 text-lg">
-                        💾 GUARDAR TEXTO
-                    </button>
-                </div>
-            </div>
-
-            <!-- HISTORIAL -->
-            <div class="mt-10 border-t border-zinc-700 pt-6">
-                <h3 class="text-xl font-bold mb-4 text-center">Mis Reflexiones Guardadas</h3>
-                <div id="lista-notas" class="space-y-4"></div>
             </div>
         </section>
+
+        <!-- REFLEXIÓN ESCRITA -->
+        <section class="p-5 bg-zinc-900 rounded-2xl border border-indigo-900">
+            <h2 class="text-lg font-bold mb-3 flex items-center gap-2">✏️ Reflexión Escrita</h2>
+            <textarea id="texto-reflexion" rows="3" placeholder="Escribe aquí..."></textarea>
+            <button onclick="guardarReflexionEscrita()" class="high-contrast-btn mt-2 bg-indigo-600 text-white border-none text-sm">
+                GUARDAR TEXTO
+            </button>
+        </section>
+
+        <!-- HISTORIAL -->
+        <div class="pt-2">
+            <h3 class="text-md font-bold mb-3 text-zinc-400 uppercase tracking-widest text-center">Historial de Hoy</h3>
+            <div id="lista-notas" class="space-y-3 pb-10"></div>
+        </div>
     </main>
 
     <script>
-        // --- LÓGICA DE DATOS ---
         const temas = [
             { t: "Gracia Renovada", c: "Lamentaciones 3:22", m: "Sus misericordias son nuevas cada mañana. Hoy tienes una oportunidad fresca." },
             { t: "Fuerza en la Debilidad", c: "2 Corintios 12:9", m: "Mi gracia es suficiente para ti. Mi poder se perfecciona en tu debilidad." },
@@ -191,53 +162,51 @@
         ];
 
         let fechaActual = new Date();
-        let fontSize = 20;
-        let dbReflexiones = JSON.parse(localStorage.getItem('dev_reflexiones_v6') || '{}');
+        let dbReflexiones = JSON.parse(localStorage.getItem('dev_reflexiones_v7') || '{}');
         const synth = window.speechSynthesis;
         
-        // --- LÓGICA DE VOZ ---
         let recognition = null;
         let transcriptAcumulado = "";
         let esPausaManual = false;
 
         function setupSpeech() {
+            // Re-instanciar siempre para evitar errores de objeto "muerto" en móvil
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) return null;
+            if (!SpeechRecognition) {
+                alert("Tu navegador no soporta grabación de voz.");
+                return null;
+            }
 
             const rec = new SpeechRecognition();
             rec.lang = 'es-ES';
             rec.continuous = true;
             rec.interimResults = true;
 
+            rec.onstart = () => {
+                document.getElementById('status-badge').innerText = "🔴 ESCUCHANDO...";
+                document.getElementById('status-badge').className = "text-center text-xs font-bold text-red-500";
+            };
+
             rec.onresult = (event) => {
-                let interimTranscript = '';
+                let interim = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         transcriptAcumulado += event.results[i][0].transcript + " ";
                     } else {
-                        interimTranscript += event.results[i][0].transcript;
+                        interim += event.results[i][0].transcript;
                     }
                 }
-                document.getElementById('area-transcripcion').innerText = transcriptAcumulado + interimTranscript;
+                document.getElementById('area-transcripcion').innerText = transcriptAcumulado + interim;
             };
 
-            rec.onstart = () => {
-                actualizarUIVoz(true);
-                document.getElementById('status-badge').innerText = "Estado: ESCUCHANDO";
+            rec.onerror = (e) => {
+                console.error("Error Speech:", e.error);
+                if (e.error === 'not-allowed') alert("Permite el acceso al micrófono en ajustes.");
+                actualizarUIVoz(false);
             };
 
             rec.onend = () => {
-                if (!esPausaManual && transcriptAcumulado === "") {
-                    actualizarUIVoz(false);
-                }
-                if (esPausaManual) {
-                    document.getElementById('status-badge').innerText = "Estado: EN PAUSA";
-                }
-            };
-
-            rec.onerror = () => {
-                anunciar("Error de micrófono.");
-                actualizarUIVoz(false);
+                if (!esPausaManual) actualizarUIVoz(false);
             };
 
             return rec;
@@ -245,16 +214,29 @@
 
         function iniciarGrabacion() {
             synth.cancel();
-            if (!recognition) recognition = setupSpeech();
             esPausaManual = false;
-            recognition.start();
+            
+            // Re-creamos el objeto en cada inicio para limpiar estados de error en móvil
+            recognition = setupSpeech();
+            if (recognition) {
+                try {
+                    recognition.start();
+                    actualizarUIVoz(true);
+                } catch(e) {
+                    console.error("Error al iniciar rec:", e);
+                }
+            }
         }
 
         function pausarGrabacion() {
             if (recognition) {
                 esPausaManual = true;
                 recognition.stop();
-                anunciar("Grabación pausada.");
+                document.getElementById('status-badge').innerText = "⏸️ PAUSADO";
+                document.getElementById('status-badge').className = "text-center text-xs font-bold text-orange-500";
+                document.getElementById('btn-start').innerText = "REANUDAR";
+                document.getElementById('btn-start').classList.remove('hidden');
+                document.getElementById('controles-activos').classList.add('hidden');
             }
         }
 
@@ -262,94 +244,76 @@
             if (transcriptAcumulado.trim()) {
                 guardarEnDB(transcriptAcumulado.trim(), 'voz');
                 cancelarGrabacion();
-            } else {
-                anunciar("No hay nada que guardar.");
             }
         }
 
         function cancelarGrabacion() {
             esPausaManual = false;
-            if (recognition) recognition.stop();
+            if (recognition) try { recognition.stop(); } catch(e){}
             transcriptAcumulado = "";
-            document.getElementById('area-transcripcion').innerText = "Su voz aparecerá aquí...";
+            document.getElementById('area-transcripcion').innerText = "Pulsa Grabar para empezar...";
+            document.getElementById('btn-start').innerText = "INICIAR GRABACIÓN";
             actualizarUIVoz(false);
         }
 
         function actualizarUIVoz(grabando) {
-            const elements = ['btn-start', 'btn-pause', 'btn-save', 'btn-cancel'];
-            const ui = {};
-            elements.forEach(id => ui[id] = document.getElementById(id));
+            const btnStart = document.getElementById('btn-start');
+            const controles = document.getElementById('controles-activos');
+            const btnCancel = document.getElementById('btn-cancel');
 
             if (grabando) {
-                ui['btn-start'].classList.add('hidden');
-                ui['btn-pause'].classList.remove('hidden');
-                ui['btn-save'].classList.remove('hidden');
-                ui['btn-cancel'].classList.remove('hidden');
-                ui['btn-pause'].classList.add('recording-active');
-            } else if (esPausaManual) {
-                ui['btn-start'].classList.remove('hidden');
-                ui['btn-start'].innerText = "▶️ REANUDAR";
-                ui['btn-pause'].classList.add('hidden');
-                ui['btn-save'].classList.remove('hidden');
-                ui['btn-cancel'].classList.remove('hidden');
+                btnStart.classList.add('hidden');
+                controles.classList.remove('hidden');
+                btnCancel.classList.remove('hidden');
+                controles.classList.add('recording-active');
             } else {
-                ui['btn-start'].classList.remove('hidden');
-                ui['btn-start'].innerText = "🎤 GRABAR";
-                ui['btn-pause'].classList.add('hidden');
-                ui['btn-save'].classList.add('hidden');
-                ui['btn-cancel'].classList.add('hidden');
-                document.getElementById('status-badge').innerText = "Estado: Esperando";
+                if (!esPausaManual) {
+                    btnStart.classList.remove('hidden');
+                    controles.classList.add('hidden');
+                    btnCancel.classList.add('hidden');
+                    document.getElementById('status-badge').innerText = "Listo para grabar";
+                    document.getElementById('status-badge').className = "text-center text-xs font-bold text-zinc-500";
+                }
             }
         }
 
-        // --- LÓGICA DE ESCRITURA ---
         function guardarReflexionEscrita() {
-            const textarea = document.getElementById('texto-reflexion');
-            const texto = textarea.value.trim();
-            if (texto) {
-                guardarEnDB(texto, 'texto');
-                textarea.value = '';
-                anunciar("Reflexión escrita guardada.");
-            } else {
-                anunciar("Escriba algo primero.");
+            const text = document.getElementById('texto-reflexion').value.trim();
+            if (text) {
+                guardarEnDB(text, 'texto');
+                document.getElementById('texto-reflexion').value = '';
             }
         }
 
-        // --- BASE DE DATOS LOCAL ---
         function guardarEnDB(texto, tipo) {
             const iso = fechaActual.toISOString().split('T')[0];
             if (!dbReflexiones[iso]) dbReflexiones[iso] = [];
-            
             dbReflexiones[iso].push({
                 id: Date.now(),
                 texto: texto,
                 tipo: tipo,
                 hora: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
             });
-
-            localStorage.setItem('dev_reflexiones_v6', JSON.stringify(dbReflexiones));
+            localStorage.setItem('dev_reflexiones_v7', JSON.stringify(dbReflexiones));
             cargarNotas();
+            anunciar("Guardado");
         }
 
         function cargarNotas() {
             const iso = fechaActual.toISOString().split('T')[0];
             const notas = dbReflexiones[iso] || [];
             const lista = document.getElementById('lista-notas');
-            lista.innerHTML = notas.length ? '' : '<p class="opacity-50 italic text-center">Sin reflexiones hoy.</p>';
+            lista.innerHTML = notas.length ? '' : '<p class="text-center text-zinc-600 text-sm">Sin notas hoy.</p>';
             
             notas.slice().reverse().forEach(n => {
                 const div = document.createElement('div');
                 div.className = 'note-card';
                 div.innerHTML = `
-                    <div class="flex justify-between items-center mb-1">
-                        <p class="text-yellow-500 font-bold text-xs">
-                            ${n.tipo === 'voz' ? '🎤 VOZ' : '⌨️ TEXTO'} - ${n.hora}
-                        </p>
-                    </div>
-                    <p class="text-xl mb-3">${n.texto}</p>
-                    <div class="flex gap-4">
-                        <button onclick="anunciar('${n.texto.replace(/'/g, "\\'")}')" class="text-blue-400 font-bold underline">Oír</button>
-                        <button onclick="borrarNota(${n.id})" class="text-red-500 font-bold underline">Borrar</button>
+                    <p class="text-[10px] font-bold text-yellow-500 mb-1 opacity-70">${n.tipo.toUpperCase()} • ${n.hora}</p>
+                    <p class="text-md mb-2 leading-tight">${n.texto}</p>
+                    <div class="flex gap-4 border-t border-white/5 pt-2">
+                        <button onclick="anunciar('${n.texto.replace(/'/g, "\\'")}')" class="text-blue-400 text-xs font-bold uppercase">Oír</button>
+                        <button onclick="borrarNota(${n.id})" class="text-red-500 text-xs font-bold uppercase">Borrar</button>
                     </div>
                 `;
                 lista.appendChild(div);
@@ -359,14 +323,13 @@
         function borrarNota(id) {
             const iso = fechaActual.toISOString().split('T')[0];
             dbReflexiones[iso] = dbReflexiones[iso].filter(n => n.id !== id);
-            localStorage.setItem('dev_reflexiones_v6', JSON.stringify(dbReflexiones));
+            localStorage.setItem('dev_reflexiones_v7', JSON.stringify(dbReflexiones));
             cargarNotas();
         }
 
-        // --- NAVEGACIÓN E INTERFAZ ---
         function actualizarInterfaz() {
-            const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
-            document.getElementById('fecha-display').innerText = fechaActual.toLocaleDateString('es-ES', opciones);
+            const opciones = { weekday: 'short', day: 'numeric', month: 'short' };
+            document.getElementById('fecha-display').innerText = fechaActual.toLocaleDateString('es-ES', opciones).toUpperCase();
             const dia = Math.floor((fechaActual - new Date(fechaActual.getFullYear(), 0, 0)) / 86400000);
             const contenido = temas[dia % temas.length];
             document.getElementById('dev-titulo').innerText = contenido.t;
@@ -378,11 +341,6 @@
         function navegarFecha(dias) {
             fechaActual.setDate(fechaActual.getDate() + dias);
             cancelarGrabacion();
-            actualizarInterfaz();
-        }
-
-        function irAHoy() {
-            fechaActual = new Date();
             actualizarInterfaz();
         }
 
@@ -398,13 +356,7 @@
         function leerDevocional() {
             const t = document.getElementById('dev-titulo').innerText;
             const m = document.getElementById('dev-cuerpo').innerText;
-            anunciar(`${t}. ${m}`);
-        }
-
-        function cambiarFuente(delta) {
-            fontSize += delta;
-            fontSize = Math.max(16, Math.min(50, fontSize));
-            document.body.style.fontSize = fontSize + 'px';
+            anunciar(t + ". " + m);
         }
 
         window.onload = actualizarInterfaz;
