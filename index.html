@@ -11,7 +11,7 @@
             --text-primary: #FFFFFF;
             --accent: #FFFF00; 
             --focus-outline: #00FF00;
-            --recording: #FF3B30; /* Rojo más vibrante para móvil */
+            --recording: #FF3B30; 
         }
 
         body {
@@ -28,7 +28,6 @@
             outline-offset: 2px;
         }
 
-        /* Botones optimizados para pulgares */
         .high-contrast-btn {
             background-color: var(--accent);
             color: #000;
@@ -43,6 +42,7 @@
             justify-content: center;
             min-height: 64px;
             width: 100%;
+            cursor: pointer;
         }
 
         .recording-active {
@@ -53,9 +53,9 @@
         }
 
         @keyframes pulse-mobile {
-            0% { transform: scale(1); }
-            50% { transform: scale(0.98); background-color: #cc2f26; }
-            100% { transform: scale(1); }
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
+            70% { transform: scale(0.95); box-shadow: 0 0 0 20px rgba(255, 59, 48, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
         }
 
         .devotional-card {
@@ -91,11 +91,7 @@
             appearance: none;
         }
 
-        /* Mejoras de espaciado móvil */
         @media (max-width: 640px) {
-            .grid-mobile-stack {
-                grid-template-columns: 1fr;
-            }
             .text-dynamic {
                 font-size: 1.5rem !important;
             }
@@ -187,18 +183,23 @@
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
             recognition.lang = 'es-ES';
-            recognition.continuous = false;
+            recognition.continuous = false; // Cambiado a false para mejor estabilidad en móviles
             recognition.interimResults = false;
 
             recognition.onstart = () => {
                 grabacionActiva = true;
                 actualizarBotonGrabacion(true);
-                anunciar("Grabando. Hable ahora.");
+                anunciar("Escuchando. Hable ahora.");
             };
 
             recognition.onresult = (event) => {
-                const texto = event.results[0][0].transcript;
-                guardarNota(texto, 'voz');
+                // Extraer el texto de manera segura
+                if (event.results.length > 0) {
+                    const texto = event.results[0][0].transcript;
+                    if (texto.trim().length > 0) {
+                        guardarNota(texto, 'voz');
+                    }
+                }
             };
 
             recognition.onend = () => {
@@ -207,28 +208,41 @@
             };
 
             recognition.onerror = (event) => {
-                console.error(event.error);
-                if(event.error === 'not-allowed') anunciar("Permiso de micrófono denegado.");
-                else anunciar("Error al grabar.");
+                console.error("Error de reconocimiento:", event.error);
                 grabacionActiva = false;
                 actualizarBotonGrabacion(false);
+                
+                if(event.error === 'not-allowed') {
+                    anunciar("Debe permitir el acceso al micrófono en los ajustes de su móvil.");
+                } else if (event.error === 'no-speech') {
+                    anunciar("No se detectó voz. Intente de nuevo.");
+                } else {
+                    anunciar("Hubo un error al grabar.");
+                }
             };
         }
 
         window.onload = () => {
             actualizarInterfaz();
-            anunciar("Devocional optimizado para móvil listo.");
+            anunciar("Aplicación lista.");
         };
 
         function gestionarDictado() {
             if (!recognition) {
-                anunciar("Dictado no soportado en este móvil.");
+                anunciar("Este navegador no soporta grabación de voz.");
                 return;
             }
+
             try {
-                if (grabacionActiva) recognition.stop();
-                else recognition.start();
+                if (grabacionActiva) {
+                    recognition.stop();
+                } else {
+                    // Reiniciamos por seguridad
+                    synth.cancel(); 
+                    recognition.start();
+                }
             } catch (e) {
+                console.error("Excepción en reconocimiento:", e);
                 recognition.stop();
             }
         }
@@ -240,8 +254,8 @@
 
             if (estaGrabando) {
                 btn.classList.add('recording-active');
-                texto.innerText = "Detener Grabación";
-                status.innerText = "ESCUCHANDO...";
+                texto.innerText = "Detener y Guardar";
+                status.innerText = "● GRABANDO...";
             } else {
                 btn.classList.remove('recording-active');
                 texto.innerText = "Toca para Grabar";
@@ -258,7 +272,7 @@
         function irAHoy() {
             fechaActual = new Date();
             actualizarInterfaz();
-            anunciar("Regresaste a hoy.");
+            anunciar("Hoy.");
         }
 
         function actualizarInterfaz() {
@@ -288,14 +302,16 @@
 
         function detenerVoz() {
             synth.cancel();
-            if (grabacionActiva) recognition.stop();
+            if (grabacionActiva) {
+                recognition.stop();
+            }
         }
 
         function cambiarFuente(delta) {
             fontSize += delta;
             fontSize = Math.max(16, Math.min(50, fontSize));
             document.body.style.fontSize = fontSize + 'px';
-            anunciar("Texto cambiado.");
+            anunciar("Tamaño ajustado.");
         }
 
         function guardarEscritura() {
@@ -303,17 +319,34 @@
             if (texto) {
                 guardarNota(texto, 'escrito');
                 document.getElementById('input-escritura').value = '';
+            } else {
+                anunciar("El campo está vacío.");
             }
         }
 
         function guardarNota(texto, tipo) {
-            const iso = fechaActual.toISOString().split('T')[0];
-            const db = JSON.parse(localStorage.getItem('dev_m_v3') || '{}');
-            if (!db[iso]) db[iso] = [];
-            db[iso].push({ id: Date.now(), texto, tipo, hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
-            localStorage.setItem('dev_m_v3', JSON.stringify(db));
-            cargarNotas();
-            anunciar("Nota guardada.");
+            try {
+                const iso = fechaActual.toISOString().split('T')[0];
+                const db = JSON.parse(localStorage.getItem('dev_m_v3') || '{}');
+                
+                if (!db[iso]) db[iso] = [];
+                
+                const nuevaNota = { 
+                    id: Date.now(), 
+                    texto: texto, 
+                    tipo: tipo, 
+                    hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
+                };
+                
+                db[iso].push(nuevaNota);
+                localStorage.setItem('dev_m_v3', JSON.stringify(db));
+                
+                cargarNotas();
+                anunciar("Grabación guardada correctamente.");
+            } catch (e) {
+                console.error("Error al guardar:", e);
+                anunciar("Error al guardar la nota.");
+            }
         }
 
         function cargarNotas() {
@@ -321,21 +354,25 @@
             const db = JSON.parse(localStorage.getItem('dev_m_v3') || '{}');
             const notas = db[iso] || [];
             const lista = document.getElementById('lista-notas');
-            lista.innerHTML = notas.length ? '' : '<p class="text-center opacity-50">Sin reflexiones hoy.</p>';
             
-            notas.slice().reverse().forEach(n => {
-                const div = document.createElement('div');
-                div.className = 'note-card';
-                div.innerHTML = `
-                    <p class="text-yellow-500 font-bold mb-1">${n.tipo === 'voz' ? '🎤' : '✏️'} ${n.hora}</p>
-                    <p class="text-xl mb-3">${n.texto}</p>
-                    <div class="flex gap-4">
-                        <button onclick="anunciar('${n.texto}')" class="text-blue-400 font-bold underline">Oír</button>
-                        <button onclick="borrarNota(${n.id})" class="text-red-500 font-bold underline">Borrar</button>
-                    </div>
-                `;
-                lista.appendChild(div);
-            });
+            if (notas.length === 0) {
+                lista.innerHTML = '<p class="text-center opacity-50 text-xl">Sin reflexiones guardadas hoy.</p>';
+            } else {
+                lista.innerHTML = '';
+                notas.slice().reverse().forEach(n => {
+                    const div = document.createElement('div');
+                    div.className = 'note-card';
+                    div.innerHTML = `
+                        <p class="text-yellow-500 font-bold mb-1" style="font-size: 1.1em">${n.tipo === 'voz' ? '🎤 Voz' : '✏️ Texto'} - ${n.hora}</p>
+                        <p class="text-xl mb-3">${n.texto}</p>
+                        <div class="flex gap-4">
+                            <button onclick="anunciar('${n.texto}')" class="text-blue-400 font-bold underline p-2" style="font-size: 1.2em">Oír</button>
+                            <button onclick="borrarNota(${n.id})" class="text-red-500 font-bold underline p-2" style="font-size: 1.2em">Borrar</button>
+                        </div>
+                    `;
+                    lista.appendChild(div);
+                });
+            }
         }
 
         function borrarNota(id) {
@@ -344,9 +381,8 @@
             db[iso] = db[iso].filter(n => n.id !== id);
             localStorage.setItem('dev_m_v3', JSON.stringify(db));
             cargarNotas();
-            anunciar("Borrado.");
+            anunciar("Nota eliminada.");
         }
     </script>
 </body>
-
 </html>
