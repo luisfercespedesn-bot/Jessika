@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devocional Diario con Calendario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --text-primary: #FFFFFF;
+            --accent: #FFFF00; 
+            --focus-outline: #00FF00;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            transition: font-size 0.2s ease;
+        }
+
+        *:focus {
+            outline: 5px solid var(--focus-outline) !important;
+            outline-offset: 4px;
+        }
+
+        .high-contrast-btn {
+            background-color: var(--accent);
+            color: #000;
+            font-weight: 800;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            text-transform: uppercase;
+            border: 2px solid #000;
+        }
+
+        .high-contrast-btn:disabled {
+            background-color: #444;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        .devotional-card {
+            border: 4px solid var(--accent);
+            padding: 2rem;
+            border-radius: 15px;
+            background-color: #0a0a0a;
+        }
+
+        .calendar-nav {
+            background-color: #1a1a1a;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 2px solid #333;
+        }
+
+        .note-card {
+            background-color: #1a1a1a;
+            border-left: 8px solid var(--accent);
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        /* Estilo para los botones de navegación de fecha */
+        .nav-date-btn {
+            background-color: #333;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            border: 2px solid transparent;
+        }
+        
+        .nav-date-btn:hover {
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="max-w-4xl mx-auto mb-8">
+        <h1 id="main-title" class="text-4xl md:text-6xl font-black mb-4" tabindex="0">
+            Mi Devocional Diario
+        </h1>
+        
+        <!-- Controles Principales -->
+        <nav class="flex flex-wrap gap-4 mb-8" aria-label="Controles generales">
+            <button onclick="leerDevocional()" class="high-contrast-btn" aria-label="Escuchar devocional actual">
+                🔊 Escuchar Contenido
+            </button>
+            <button onclick="cambiarFuente(4)" class="high-contrast-btn" aria-label="Aumentar tamaño de letra">
+                A+ Grande
+            </button>
+            <button onclick="cambiarFuente(-4)" class="high-contrast-btn" aria-label="Reducir tamaño de letra">
+                A- Pequeña
+            </button>
+            <button onclick="detenerVoz()" class="high-contrast-btn bg-red-700 text-white" aria-label="Detener sonido">
+                🛑 Silenciar
+            </button>
+        </nav>
+
+        <!-- Navegación de Calendario -->
+        <section class="calendar-nav flex items-center justify-between gap-4" aria-label="Navegación por fechas">
+            <button id="btn-prev" onclick="navegarFecha(-1)" class="nav-date-btn text-2xl" aria-label="Ir al día anterior">
+                ⬅️ Anterior
+            </button>
+            
+            <div class="text-center">
+                <p id="fecha-display" class="text-2xl font-bold text-yellow-400" aria-live="polite" tabindex="0">
+                    Cargando fecha...
+                </p>
+            </div>
+
+            <button id="btn-next" onclick="navegarFecha(1)" class="nav-date-btn text-2xl" aria-label="Ir al día siguiente">
+                Siguiente ➡️
+            </button>
+        </section>
+    </header>
+
+    <main class="max-w-4xl mx-auto">
+        <!-- Tarjeta del Devocional Dinámico -->
+        <article id="devocional-contenedor" class="devotional-card" aria-live="polite">
+            <h2 id="dev-titulo" class="text-3xl font-bold mb-4 text-yellow-400" tabindex="0">
+                Cargando título...
+            </h2>
+            <p id="dev-cita" class="text-2xl italic mb-6 border-b border-yellow-800 pb-4" tabindex="0">
+                Cargando cita...
+            </p>
+            <div id="dev-cuerpo" class="text-xl space-y-4" tabindex="0">
+                <p>Cargando mensaje del día...</p>
+            </div>
+        </article>
+
+        <!-- Notas de Voz -->
+        <section class="mt-12 bg-zinc-900 p-6 rounded-xl border-2 border-dashed border-gray-600">
+            <h2 class="text-3xl font-bold mb-6" tabindex="0">Mis Reflexiones de Hoy</h2>
+            <div class="flex flex-col gap-4">
+                <button id="btn-dictar" onclick="comenzarDictado()" class="high-contrast-btn bg-blue-700 text-white py-6 text-2xl" aria-label="Grabar nota por voz">
+                    🎤 Grabar Reflexión (Dictar)
+                </button>
+                <p id="status-dictado" class="text-yellow-400 font-bold text-center" aria-live="assertive"></p>
+            </div>
+            <div id="lista-notas" class="mt-6 space-y-4"></div>
+        </section>
+    </main>
+
+    <script>
+        // Datos de ejemplo para el devocional
+        const devocionalesDB = {
+            "2025-02-05": {
+                titulo: "La Paz en la Tormenta",
+                cita: "Juan 14:27 - 'La paz os dejo, mi paz os doy.'",
+                cuerpo: "La paz no es la ausencia de problemas, sino la presencia de Dios en medio de ellos. Hoy confía en que Él tiene el control de las aguas agitadas."
+            },
+            "2025-02-06": {
+                titulo: "Nuevas Misericordias",
+                cita: "Lamentaciones 3:22-23 - 'Nuevas son cada mañana.'",
+                cuerpo: "Cada amanecer es una oportunidad para comenzar de nuevo. No arrastres las culpas de ayer, hoy la gracia de Dios te cubre totalmente."
+            },
+            "2025-02-07": {
+                titulo: "Fuerza en la Debilidad",
+                cita: "2 Corintios 12:9 - 'Mi poder se perfecciona en la debilidad.'",
+                cuerpo: "Cuando sientas que ya no puedes más, es cuando el poder de Dios se manifiesta con más fuerza en tu vida. Descansa en Su fortaleza."
+            },
+            "2025-02-08": {
+                titulo: "Sembrando con Esperanza",
+                cita: "Gálatas 6:9 - 'No nos cansemos, pues, de hacer bien.'",
+                cuerpo: "Lo que siembras hoy con esfuerzo, lo cosecharás mañana con alegría. Mantén la fe en el proceso que Dios ha diseñado para ti."
+            }
+        };
+
+        let fechaActual = new Date("2025-02-05"); // Fecha inicial de ejemplo
+        let fontSize = 24;
+        const synth = window.speechSynthesis;
+
+        window.onload = () => {
+            actualizarInterfaz();
+            anunciar("Calendario cargado. Seleccione una fecha usando los botones de anterior y siguiente.");
+        };
+
+        function navegarFecha(dias) {
+            fechaActual.setDate(fechaActual.getDate() + dias);
+            actualizarInterfaz();
+            
+            const fechaTexto = document.getElementById('fecha-display').innerText;
+            const titulo = document.getElementById('dev-titulo').innerText;
+            anunciar(`Cambiado a ${fechaTexto}. Título: ${titulo}`);
+        }
+
+        function actualizarInterfaz() {
+            const isoFecha = fechaActual.toISOString().split('T')[0];
+            const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('fecha-display').innerText = fechaActual.toLocaleDateString('es-ES', opciones);
+
+            const contenido = devocionalesDB[isoFecha] || {
+                titulo: "Caminando con Dios",
+                cita: "Salmos 23:1",
+                cuerpo: "Sigue explorando Su palabra cada día. No hay un devocional específico escrito para hoy todavía, pero Su amor es constante."
+            };
+
+            document.getElementById('dev-titulo').innerText = contenido.titulo;
+            document.getElementById('dev-cita').innerText = contenido.cita;
+            document.getElementById('dev-cuerpo').innerHTML = `<p>${contenido.cuerpo}</p>`;
+            
+            cargarNotas();
+        }
+
+        function leerDevocional() {
+            const titulo = document.getElementById('dev-titulo').innerText;
+            const cita = document.getElementById('dev-cita').innerText;
+            const cuerpo = document.getElementById('dev-cuerpo').innerText;
+            anunciar(`${titulo}. Cita bíblica: ${cita}. Reflexión: ${cuerpo}`);
+        }
+
+        function anunciar(texto) {
+            synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = 'es-ES';
+            utterance.rate = 0.95;
+            synth.speak(utterance);
+        }
+
+        function detenerVoz() {
+            synth.cancel();
+        }
+
+        function cambiarFuente(delta) {
+            fontSize += delta;
+            if (fontSize < 18) fontSize = 18;
+            if (fontSize > 70) fontSize = 70;
+            document.body.style.fontSize = fontSize + 'px';
+            anunciar("Letra ajustada");
+        }
+
+        // --- Sistema de Notas por Voz ---
+        function comenzarDictado() {
+            if (!('webkitSpeechRecognition' in window)) {
+                anunciar("Dictado no disponible en este navegador.");
+                return;
+            }
+
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = 'es-ES';
+            
+            recognition.onstart = () => {
+                document.getElementById('status-dictado').innerText = "🔴 ESCUCHANDO... HABLE AHORA";
+                anunciar("Empezando a escuchar. Hable ahora.");
+            };
+
+            recognition.onresult = (event) => {
+                const texto = event.results[0][0].transcript;
+                guardarNota(texto);
+                document.getElementById('status-dictado').innerText = "";
+            };
+
+            recognition.onerror = () => {
+                anunciar("Error al escuchar. Intente de nuevo.");
+                document.getElementById('status-dictado').innerText = "";
+            };
+
+            recognition.start();
+        }
+
+        function guardarNota(texto) {
+            const isoFecha = fechaActual.toISOString().split('T')[0];
+            const notasGuardadas = JSON.parse(localStorage.getItem('notas_calendario') || '{}');
+            
+            if (!notasGuardadas[isoFecha]) notasGuardadas[isoFecha] = [];
+            
+            notasGuardadas[isoFecha].push({
+                id: Date.now(),
+                texto: texto,
+                hora: new Date().toLocaleTimeString()
+            });
+
+            localStorage.setItem('notas_calendario', JSON.stringify(notasGuardadas));
+            renderizarNotas(notasGuardadas[isoFecha]);
+            anunciar("Nota guardada para este día.");
+        }
+
+        function cargarNotas() {
+            const isoFecha = fechaActual.toISOString().split('T')[0];
+            const notasGuardadas = JSON.parse(localStorage.getItem('notas_calendario') || '{}');
+            renderizarNotas(notasGuardadas[isoFecha] || []);
+        }
+
+        function renderizarNotas(notasDia) {
+            const contenedor = document.getElementById('lista-notas');
+            contenedor.innerHTML = '';
+            
+            if (notasDia.length === 0) {
+                contenedor.innerHTML = '<p class="text-gray-500 italic">No hay notas para esta fecha.</p>';
+                return;
+            }
+
+            notasDia.forEach(nota => {
+                const div = document.createElement('div');
+                div.className = 'note-card';
+                div.tabIndex = 0;
+                div.innerHTML = `
+                    <p class="text-sm text-yellow-500">${nota.hora}</p>
+                    <p class="text-xl font-bold">${nota.texto}</p>
+                    <div class="mt-2 space-x-4">
+                        <button onclick="anunciar('${nota.texto}')" class="text-blue-400 underline">Oír Nota</button>
+                        <button onclick="borrarNota(${nota.id})" class="text-red-500 underline">Borrar</button>
+                    </div>
+                `;
+                contenedor.appendChild(div);
+            });
+        }
+
+        function borrarNota(id) {
+            const isoFecha = fechaActual.toISOString().split('T')[0];
+            let notasGuardadas = JSON.parse(localStorage.getItem('notas_calendario') || '{}');
+            notasGuardadas[isoFecha] = notasGuardadas[isoFecha].filter(n => n.id !== id);
+            localStorage.setItem('notas_calendario', JSON.stringify(notasGuardadas));
+            renderizarNotas(notasGuardadas[isoFecha]);
+            anunciar("Nota eliminada.");
+        }
+    </script>
+</body>
+</html>
