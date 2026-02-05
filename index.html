@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>Devocional Accesible 365 - Optimizado Móvil</title>
+    <title>Devocional 365 - Reflexiones Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -11,7 +11,8 @@
             --text-primary: #FFFFFF;
             --accent: #FFFF00; 
             --focus-outline: #00FF00;
-            --recording: #FF3B30; 
+            --recording: #FF3B30;
+            --paused: #FF9500;
         }
 
         body {
@@ -19,7 +20,6 @@
             color: var(--text-primary);
             font-family: system-ui, -apple-system, sans-serif;
             line-height: 1.6;
-            transition: font-size 0.2s ease;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -32,45 +32,38 @@
             background-color: var(--accent);
             color: #000;
             font-weight: 800;
-            padding: 1.25rem;
+            padding: 1rem;
             border-radius: 16px;
             text-transform: uppercase;
             border: 3px solid #000;
-            font-size: 1.1rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 64px;
-            width: 100%;
             cursor: pointer;
             transition: all 0.2s;
         }
 
+        .btn-record { background-color: #2563eb; color: white; }
+        .btn-pause { background-color: var(--paused); color: black; }
+        .btn-save { background-color: #059669; color: white; }
+        .btn-text-save { background-color: #4f46e5; color: white; }
+
         .recording-active {
-            background-color: var(--recording) !important;
-            color: white !important;
+            animation: pulse-red 1.2s infinite;
             border-color: white !important;
-            animation: pulse-mobile 1.2s infinite;
         }
 
-        @keyframes pulse-mobile {
+        @keyframes pulse-red {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
-            70% { transform: scale(0.95); box-shadow: 0 0 0 20px rgba(255, 59, 48, 0); }
+            70% { transform: scale(0.98); box-shadow: 0 0 0 15px rgba(255, 59, 48, 0); }
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
         }
 
         .devotional-card {
             border: 4px solid var(--accent);
             padding: 1.5rem;
-            border-radius: 20px;
+            border-radius: 24px;
             background-color: #0a0a0a;
-        }
-
-        .calendar-nav {
-            background-color: #1a1a1a;
-            border-radius: 16px;
-            padding: 1rem;
-            border: 2px solid #333;
         }
 
         .note-card {
@@ -81,285 +74,340 @@
             border-radius: 12px;
         }
 
-        textarea {
+        .transcript-preview {
             background-color: #1a1a1a;
+            border: 2px dashed #444;
+            padding: 1rem;
+            border-radius: 12px;
+            min-height: 60px;
+            font-style: italic;
+            color: #ccc;
+        }
+
+        textarea {
+            background-color: #111;
             color: white;
-            border: 3px solid var(--accent);
+            border: 2px solid #333;
+            border-radius: 12px;
             padding: 1rem;
             width: 100%;
-            border-radius: 12px;
-            font-size: 1.2rem;
-            appearance: none;
+            font-size: 1.1rem;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
         }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-4 md:p-8">
 
-    <header class="max-w-4xl mx-auto mb-6">
-        <h1 id="main-title" class="text-4xl md:text-6xl font-black mb-6 text-center" tabindex="0">
-            Devocional 365
-        </h1>
+    <header class="max-w-4xl mx-auto mb-6 text-center">
+        <h1 class="text-4xl md:text-5xl font-black mb-6" tabindex="0">Mi Devocional Diario</h1>
         
-        <nav class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8" aria-label="Menú principal">
-            <button onclick="leerDevocional()" class="high-contrast-btn">🔊 Escuchar</button>
-            <button onclick="cambiarFuente(4)" class="high-contrast-btn">A+ Texto</button>
-            <button onclick="cambiarFuente(-4)" class="high-contrast-btn">A- Texto</button>
-            <button onclick="detenerVoz()" class="high-contrast-btn bg-white" style="background-color: #fff;">🛑 Parar</button>
-        </nav>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <button onclick="leerDevocional()" class="high-contrast-btn">🔊 Oír</button>
+            <button onclick="cambiarFuente(4)" class="high-contrast-btn">A+ Letra</button>
+            <button onclick="cambiarFuente(-4)" class="high-contrast-btn">A- Letra</button>
+            <button onclick="detenerVoz()" class="high-contrast-btn bg-white">🛑 Parar</button>
+        </div>
 
-        <section class="calendar-nav flex flex-col sm:flex-row items-center justify-between gap-4" aria-label="Calendario">
-            <button onclick="navegarFecha(-1)" class="high-contrast-btn sm:w-1/3" aria-label="Ayer">⬅️ Anterior</button>
-            <div class="text-center py-2">
-                <p id="fecha-display" class="text-xl font-bold text-yellow-400" aria-live="polite" tabindex="0">Cargando...</p>
-                <button onclick="irAHoy()" class="mt-1 text-blue-400 underline font-bold" aria-label="Hoy">Volver a Hoy</button>
+        <section class="bg-zinc-900 p-4 rounded-2xl flex items-center justify-between gap-4 border-2 border-zinc-700">
+            <button onclick="navegarFecha(-1)" class="high-contrast-btn px-4">⬅️</button>
+            <div class="text-center">
+                <p id="fecha-display" class="text-xl font-bold text-yellow-400" aria-live="polite">Cargando...</p>
+                <button onclick="irAHoy()" class="text-blue-400 underline text-sm font-bold">Volver a Hoy</button>
             </div>
-            <button onclick="navegarFecha(1)" class="high-contrast-btn sm:w-1/3" aria-label="Mañana">Siguiente ➡️</button>
+            <button onclick="navegarFecha(1)" class="high-contrast-btn px-4">➡️</button>
         </section>
     </header>
 
     <main class="max-w-4xl mx-auto">
-        <article id="devocional-contenedor" class="devotional-card mb-8" aria-live="polite">
-            <h2 id="dev-titulo" class="text-2xl md:text-3xl font-black mb-4 text-yellow-400" tabindex="0">Título</h2>
-            <p id="dev-cita" class="text-xl md:text-2xl italic mb-6 text-gray-300 border-l-4 border-yellow-600 pl-4" tabindex="0">Cita</p>
-            <div id="dev-cuerpo" class="text-lg md:text-xl space-y-4" tabindex="0"></div>
+        <article id="devocional-contenedor" class="devotional-card mb-8">
+            <h2 id="dev-titulo" class="text-2xl font-black mb-2 text-yellow-400">Título</h2>
+            <p id="dev-cita" class="text-lg italic mb-4 text-gray-400">Cita</p>
+            <div id="dev-cuerpo" class="text-xl leading-relaxed"></div>
         </article>
 
-        <section class="p-6 bg-zinc-900 rounded-2xl border-2 border-yellow-500">
-            <h2 class="text-2xl font-bold mb-6 text-center" tabindex="0">Diario Personal</h2>
+        <!-- SECCIÓN DE REFLEXIONES -->
+        <section class="space-y-6">
             
-            <div class="flex flex-col gap-4 items-center mb-8">
-                <button id="btn-dictar" onclick="gestionarDictado()" class="high-contrast-btn py-10 text-3xl shadow-xl" style="background-color: #2563eb; color: white;">
-                    <span id="icon-dictar" class="mr-3">🎤</span> 
-                    <span id="text-dictar">Tocar para Hablar</span>
-                </button>
-                <p id="status-dictado" class="text-2xl font-black text-red-500 h-8" aria-live="assertive"></p>
+            <!-- REFLEXIÓN POR VOZ -->
+            <div class="p-6 bg-zinc-900 rounded-3xl border-2 border-blue-500 shadow-2xl">
+                <h2 class="text-2xl font-bold mb-4 text-center">🎤 Reflexión de Voz</h2>
+                
+                <div class="flex flex-col gap-4">
+                    <div id="status-badge" class="text-center font-bold py-1 px-4 rounded-full bg-zinc-800 text-zinc-400 self-center text-sm">
+                        Estado: Esperando
+                    </div>
+
+                    <div id="area-transcripcion" class="transcript-preview mb-2" aria-live="polite">
+                        Su voz aparecerá aquí...
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button id="btn-start" onclick="iniciarGrabacion()" class="high-contrast-btn btn-record h-16 text-lg">
+                            🎤 GRABAR
+                        </button>
+                        <button id="btn-pause" onclick="pausarGrabacion()" class="high-contrast-btn btn-pause h-16 text-lg hidden">
+                            ⏸️ PAUSAR
+                        </button>
+                        <button id="btn-save" onclick="finalizarYGuardarVoz()" class="high-contrast-btn btn-save h-16 text-lg hidden">
+                            💾 GUARDAR VOZ
+                        </button>
+                    </div>
+                    
+                    <button id="btn-cancel" onclick="cancelarGrabacion()" class="text-red-400 font-bold underline mt-2 hidden">
+                        Cancelar actual
+                    </button>
+                </div>
             </div>
 
-            <div class="mb-6">
-                <textarea id="input-escritura" rows="3" placeholder="O escribe aquí tus pensamientos..." aria-label="Escribir reflexión"></textarea>
-                <button onclick="guardarEscritura()" class="high-contrast-btn mt-3 bg-emerald-600 text-white" style="background-color: #059669; color: white;">💾 Guardar Texto Escrito</button>
+            <!-- REFLEXIÓN ESCRITA -->
+            <div class="p-6 bg-zinc-900 rounded-3xl border-2 border-indigo-500 shadow-2xl">
+                <h2 class="text-2xl font-bold mb-4 text-center">✏️ Escribir Reflexión</h2>
+                <div class="flex flex-col gap-4">
+                    <textarea id="texto-reflexion" rows="4" placeholder="Escribe aquí tus pensamientos con el teclado..."></textarea>
+                    <button onclick="guardarReflexionEscrita()" class="high-contrast-btn btn-text-save h-16 text-lg">
+                        💾 GUARDAR TEXTO
+                    </button>
+                </div>
             </div>
 
-            <div id="lista-notas" class="space-y-4"></div>
+            <!-- HISTORIAL -->
+            <div class="mt-10 border-t border-zinc-700 pt-6">
+                <h3 class="text-xl font-bold mb-4 text-center">Mis Reflexiones Guardadas</h3>
+                <div id="lista-notas" class="space-y-4"></div>
+            </div>
         </section>
     </main>
 
     <script>
+        // --- LÓGICA DE DATOS ---
         const temas = [
-            { t: "La Esperanza", c: "Hebreos 11:1", m: "La fe es la certeza de lo que se espera. Mantén tu esperanza viva hoy." },
-            { t: "Paz Infinita", c: "Filipenses 4:7", m: "La paz de Dios sobrepasa todo entendimiento. Deja tus cargas en sus manos." },
-            { t: "Amor Incondicional", c: "1 Juan 4:8", m: "Dios es amor. En cada detalle de tu día, busca su cariño protector." },
-            { t: "Fortaleza Diaria", c: "Isaías 40:31", m: "Los que esperan en el Señor tendrán nuevas fuerzas." },
-            { t: "Luz en el Camino", c: "Salmos 119:105", m: "Tu palabra es lámpara a mis pies y lumbrera a mi camino." }
+            { t: "Gracia Renovada", c: "Lamentaciones 3:22", m: "Sus misericordias son nuevas cada mañana. Hoy tienes una oportunidad fresca." },
+            { t: "Fuerza en la Debilidad", c: "2 Corintios 12:9", m: "Mi gracia es suficiente para ti. Mi poder se perfecciona en tu debilidad." },
+            { t: "Guía Segura", c: "Juan 16:13", m: "El Espíritu de verdad os guiará a toda la verdad. Confía en su voz hoy." }
         ];
 
         let fechaActual = new Date();
         let fontSize = 20;
-        let grabacionActiva = false;
+        let dbReflexiones = JSON.parse(localStorage.getItem('dev_reflexiones_v6') || '{}');
         const synth = window.speechSynthesis;
+        
+        // --- LÓGICA DE VOZ ---
         let recognition = null;
+        let transcriptAcumulado = "";
+        let esPausaManual = false;
 
-        // Función para inicializar/re-inicializar el reconocimiento
-        function initRecognition() {
+        function setupSpeech() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) return null;
 
             const rec = new SpeechRecognition();
             rec.lang = 'es-ES';
-            rec.continuous = false;
-            rec.interimResults = false;
-
-            rec.onstart = () => {
-                grabacionActiva = true;
-                actualizarBotonGrabacion(true);
-                // No anunciamos por voz AQUÍ para no interferir con la grabación
-            };
+            rec.continuous = true;
+            rec.interimResults = true;
 
             rec.onresult = (event) => {
-                if (event.results.length > 0) {
-                    const texto = event.results[0][0].transcript;
-                    if (texto.trim()) {
-                        guardarNota(texto, 'voz');
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        transcriptAcumulado += event.results[i][0].transcript + " ";
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
                     }
                 }
+                document.getElementById('area-transcripcion').innerText = transcriptAcumulado + interimTranscript;
             };
 
-            rec.onerror = (event) => {
-                console.error("Error Speech:", event.error);
-                grabacionActiva = false;
-                actualizarBotonGrabacion(false);
-                if (event.error !== 'no-speech') {
-                    anunciar("Error de micrófono. Intente de nuevo.");
-                }
+            rec.onstart = () => {
+                actualizarUIVoz(true);
+                document.getElementById('status-badge').innerText = "Estado: ESCUCHANDO";
             };
 
             rec.onend = () => {
-                grabacionActiva = false;
-                actualizarBotonGrabacion(false);
+                if (!esPausaManual && transcriptAcumulado === "") {
+                    actualizarUIVoz(false);
+                }
+                if (esPausaManual) {
+                    document.getElementById('status-badge').innerText = "Estado: EN PAUSA";
+                }
+            };
+
+            rec.onerror = () => {
+                anunciar("Error de micrófono.");
+                actualizarUIVoz(false);
             };
 
             return rec;
         }
 
-        window.onload = () => {
-            actualizarInterfaz();
-            anunciar("Sistema de devocional iniciado.");
-        };
-
-        function gestionarDictado() {
-            // Cancelamos cualquier lectura actual para que el micro no capte la voz del móvil
+        function iniciarGrabacion() {
             synth.cancel();
+            if (!recognition) recognition = setupSpeech();
+            esPausaManual = false;
+            recognition.start();
+        }
 
-            if (grabacionActiva) {
-                if (recognition) recognition.stop();
-                return;
-            }
-
-            // Re-instanciamos para asegurar un objeto limpio en móvil
-            recognition = initRecognition();
-            
-            if (!recognition) {
-                anunciar("Su navegador no permite grabación.");
-                return;
-            }
-
-            try {
-                recognition.start();
-            } catch (e) {
-                console.error("Error al iniciar:", e);
+        function pausarGrabacion() {
+            if (recognition) {
+                esPausaManual = true;
                 recognition.stop();
+                anunciar("Grabación pausada.");
             }
         }
 
-        function actualizarBotonGrabacion(estaGrabando) {
-            const btn = document.getElementById('btn-dictar');
-            const texto = document.getElementById('text-dictar');
-            const status = document.getElementById('status-dictado');
-
-            if (estaGrabando) {
-                btn.classList.add('recording-active');
-                texto.innerText = "Parar y Guardar";
-                status.innerText = "● ESCUCHANDO...";
+        function finalizarYGuardarVoz() {
+            if (transcriptAcumulado.trim()) {
+                guardarEnDB(transcriptAcumulado.trim(), 'voz');
+                cancelarGrabacion();
             } else {
-                btn.classList.remove('recording-active');
-                texto.innerText = "Tocar para Hablar";
-                status.innerText = "";
+                anunciar("No hay nada que guardar.");
             }
         }
 
-        function guardarNota(texto, tipo) {
+        function cancelarGrabacion() {
+            esPausaManual = false;
+            if (recognition) recognition.stop();
+            transcriptAcumulado = "";
+            document.getElementById('area-transcripcion').innerText = "Su voz aparecerá aquí...";
+            actualizarUIVoz(false);
+        }
+
+        function actualizarUIVoz(grabando) {
+            const elements = ['btn-start', 'btn-pause', 'btn-save', 'btn-cancel'];
+            const ui = {};
+            elements.forEach(id => ui[id] = document.getElementById(id));
+
+            if (grabando) {
+                ui['btn-start'].classList.add('hidden');
+                ui['btn-pause'].classList.remove('hidden');
+                ui['btn-save'].classList.remove('hidden');
+                ui['btn-cancel'].classList.remove('hidden');
+                ui['btn-pause'].classList.add('recording-active');
+            } else if (esPausaManual) {
+                ui['btn-start'].classList.remove('hidden');
+                ui['btn-start'].innerText = "▶️ REANUDAR";
+                ui['btn-pause'].classList.add('hidden');
+                ui['btn-save'].classList.remove('hidden');
+                ui['btn-cancel'].classList.remove('hidden');
+            } else {
+                ui['btn-start'].classList.remove('hidden');
+                ui['btn-start'].innerText = "🎤 GRABAR";
+                ui['btn-pause'].classList.add('hidden');
+                ui['btn-save'].classList.add('hidden');
+                ui['btn-cancel'].classList.add('hidden');
+                document.getElementById('status-badge').innerText = "Estado: Esperando";
+            }
+        }
+
+        // --- LÓGICA DE ESCRITURA ---
+        function guardarReflexionEscrita() {
+            const textarea = document.getElementById('texto-reflexion');
+            const texto = textarea.value.trim();
+            if (texto) {
+                guardarEnDB(texto, 'texto');
+                textarea.value = '';
+                anunciar("Reflexión escrita guardada.");
+            } else {
+                anunciar("Escriba algo primero.");
+            }
+        }
+
+        // --- BASE DE DATOS LOCAL ---
+        function guardarEnDB(texto, tipo) {
             const iso = fechaActual.toISOString().split('T')[0];
-            const db = JSON.parse(localStorage.getItem('dev_v4_storage') || '{}');
+            if (!dbReflexiones[iso]) dbReflexiones[iso] = [];
             
-            if (!db[iso]) db[iso] = [];
-            
-            db[iso].push({ 
-                id: Date.now(), 
-                texto: texto, 
-                tipo: tipo, 
-                hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
+            dbReflexiones[iso].push({
+                id: Date.now(),
+                texto: texto,
+                tipo: tipo,
+                hora: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
             });
-            
-            localStorage.setItem('dev_v4_storage', JSON.stringify(db));
+
+            localStorage.setItem('dev_reflexiones_v6', JSON.stringify(dbReflexiones));
             cargarNotas();
-            anunciar("Nota guardada.");
         }
 
         function cargarNotas() {
             const iso = fechaActual.toISOString().split('T')[0];
-            const db = JSON.parse(localStorage.getItem('dev_v4_storage') || '{}');
-            const notas = db[iso] || [];
+            const notas = dbReflexiones[iso] || [];
             const lista = document.getElementById('lista-notas');
-            
-            lista.innerHTML = notas.length ? '' : '<p class="text-center opacity-50 text-xl py-4">Sin notas hoy.</p>';
+            lista.innerHTML = notas.length ? '' : '<p class="opacity-50 italic text-center">Sin reflexiones hoy.</p>';
             
             notas.slice().reverse().forEach(n => {
                 const div = document.createElement('div');
                 div.className = 'note-card';
                 div.innerHTML = `
-                    <p class="text-yellow-500 font-bold mb-1">${n.tipo === 'voz' ? '🎤 Voz' : '✏️ Texto'} - ${n.hora}</p>
-                    <p class="text-2xl mb-3">${n.texto}</p>
-                    <div class="flex gap-6">
-                        <button onclick="anunciar('${n.texto}')" class="text-blue-400 font-black text-xl underline py-2">OÍR</button>
-                        <button onclick="borrarNota(${n.id})" class="text-red-500 font-black text-xl underline py-2">BORRAR</button>
+                    <div class="flex justify-between items-center mb-1">
+                        <p class="text-yellow-500 font-bold text-xs">
+                            ${n.tipo === 'voz' ? '🎤 VOZ' : '⌨️ TEXTO'} - ${n.hora}
+                        </p>
+                    </div>
+                    <p class="text-xl mb-3">${n.texto}</p>
+                    <div class="flex gap-4">
+                        <button onclick="anunciar('${n.texto.replace(/'/g, "\\'")}')" class="text-blue-400 font-bold underline">Oír</button>
+                        <button onclick="borrarNota(${n.id})" class="text-red-500 font-bold underline">Borrar</button>
                     </div>
                 `;
                 lista.appendChild(div);
             });
         }
 
-        // --- Funciones de Utilidad ---
-        function obtenerDevocional(fecha) {
-            const dia = Math.floor((fecha - new Date(fecha.getFullYear(), 0, 0)) / 86400000);
-            const tema = temas[dia % temas.length];
-            return { titulo: tema.t, cita: tema.c, cuerpo: tema.m };
+        function borrarNota(id) {
+            const iso = fechaActual.toISOString().split('T')[0];
+            dbReflexiones[iso] = dbReflexiones[iso].filter(n => n.id !== id);
+            localStorage.setItem('dev_reflexiones_v6', JSON.stringify(dbReflexiones));
+            cargarNotas();
         }
 
+        // --- NAVEGACIÓN E INTERFAZ ---
         function actualizarInterfaz() {
             const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
             document.getElementById('fecha-display').innerText = fechaActual.toLocaleDateString('es-ES', opciones);
-            const contenido = obtenerDevocional(fechaActual);
-            document.getElementById('dev-titulo').innerText = contenido.titulo;
-            document.getElementById('dev-cita').innerText = contenido.cita;
-            document.getElementById('dev-cuerpo').innerText = contenido.cuerpo;
+            const dia = Math.floor((fechaActual - new Date(fechaActual.getFullYear(), 0, 0)) / 86400000);
+            const contenido = temas[dia % temas.length];
+            document.getElementById('dev-titulo').innerText = contenido.t;
+            document.getElementById('dev-cita').innerText = contenido.c;
+            document.getElementById('dev-cuerpo').innerText = contenido.m;
             cargarNotas();
         }
 
         function navegarFecha(dias) {
             fechaActual.setDate(fechaActual.getDate() + dias);
+            cancelarGrabacion();
             actualizarInterfaz();
-            anunciar(document.getElementById('fecha-display').innerText);
         }
 
         function irAHoy() {
             fechaActual = new Date();
             actualizarInterfaz();
-            anunciar("Hoy.");
-        }
-
-        function leerDevocional() {
-            const t = document.getElementById('dev-titulo').innerText;
-            const c = document.getElementById('dev-cita').innerText;
-            const m = document.getElementById('dev-cuerpo').innerText;
-            anunciar(`${t}. ${c}. ${m}`);
         }
 
         function anunciar(texto) {
             synth.cancel();
-            const utterance = new SpeechSynthesisUtterance(texto);
-            utterance.lang = 'es-ES';
-            utterance.rate = 1.0;
-            synth.speak(utterance);
+            const u = new SpeechSynthesisUtterance(texto);
+            u.lang = 'es-ES';
+            synth.speak(u);
         }
 
-        function detenerVoz() {
-            synth.cancel();
-            if (grabacionActiva && recognition) recognition.stop();
+        function detenerVoz() { synth.cancel(); }
+
+        function leerDevocional() {
+            const t = document.getElementById('dev-titulo').innerText;
+            const m = document.getElementById('dev-cuerpo').innerText;
+            anunciar(`${t}. ${m}`);
         }
 
         function cambiarFuente(delta) {
             fontSize += delta;
-            fontSize = Math.max(16, Math.min(60, fontSize));
+            fontSize = Math.max(16, Math.min(50, fontSize));
             document.body.style.fontSize = fontSize + 'px';
-            anunciar("Tamaño de letra cambiado.");
         }
 
-        function guardarEscritura() {
-            const texto = document.getElementById('input-escritura').value.trim();
-            if (texto) {
-                guardarNota(texto, 'escrito');
-                document.getElementById('input-escritura').value = '';
-            }
-        }
-
-        function borrarNota(id) {
-            const iso = fechaActual.toISOString().split('T')[0];
-            const db = JSON.parse(localStorage.getItem('dev_v4_storage') || '{}');
-            db[iso] = db[iso].filter(n => n.id !== id);
-            localStorage.setItem('dev_v4_storage', JSON.stringify(db));
-            cargarNotas();
-            anunciar("Eliminado.");
-        }
+        window.onload = actualizarInterfaz;
     </script>
 </body>
 </html>
