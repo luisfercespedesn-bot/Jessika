@@ -43,13 +43,14 @@
             min-height: 64px;
             width: 100%;
             cursor: pointer;
+            transition: all 0.2s;
         }
 
         .recording-active {
             background-color: var(--recording) !important;
             color: white !important;
             border-color: white !important;
-            animation: pulse-mobile 1s infinite;
+            animation: pulse-mobile 1.2s infinite;
         }
 
         @keyframes pulse-mobile {
@@ -90,12 +91,6 @@
             font-size: 1.2rem;
             appearance: none;
         }
-
-        @media (max-width: 640px) {
-            .text-dynamic {
-                font-size: 1.5rem !important;
-            }
-        }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -114,14 +109,10 @@
 
         <section class="calendar-nav flex flex-col sm:flex-row items-center justify-between gap-4" aria-label="Calendario">
             <button onclick="navegarFecha(-1)" class="high-contrast-btn sm:w-1/3" aria-label="Ayer">⬅️ Anterior</button>
-            
             <div class="text-center py-2">
-                <p id="fecha-display" class="text-xl font-bold text-yellow-400" aria-live="polite" tabindex="0">
-                    Cargando...
-                </p>
+                <p id="fecha-display" class="text-xl font-bold text-yellow-400" aria-live="polite" tabindex="0">Cargando...</p>
                 <button onclick="irAHoy()" class="mt-1 text-blue-400 underline font-bold" aria-label="Hoy">Volver a Hoy</button>
             </div>
-
             <button onclick="navegarFecha(1)" class="high-contrast-btn sm:w-1/3" aria-label="Mañana">Siguiente ➡️</button>
         </section>
     </header>
@@ -136,19 +127,17 @@
         <section class="p-6 bg-zinc-900 rounded-2xl border-2 border-yellow-500">
             <h2 class="text-2xl font-bold mb-6 text-center" tabindex="0">Diario Personal</h2>
             
-            <!-- Dictado Móvil Optimizado -->
             <div class="flex flex-col gap-4 items-center mb-8">
-                <button id="btn-dictar" onclick="gestionarDictado()" class="high-contrast-btn py-8 text-2xl" style="background-color: #2563eb; color: white;">
-                    <span id="icon-dictar" class="mr-2">🎤</span> 
-                    <span id="text-dictar">Toca para Grabar</span>
+                <button id="btn-dictar" onclick="gestionarDictado()" class="high-contrast-btn py-10 text-3xl shadow-xl" style="background-color: #2563eb; color: white;">
+                    <span id="icon-dictar" class="mr-3">🎤</span> 
+                    <span id="text-dictar">Tocar para Hablar</span>
                 </button>
-                <p id="status-dictado" class="text-xl font-bold text-red-500 h-6" aria-live="assertive"></p>
+                <p id="status-dictado" class="text-2xl font-black text-red-500 h-8" aria-live="assertive"></p>
             </div>
 
             <div class="mb-6">
-                <label for="input-escritura" class="sr-only">Escribir reflexión</label>
-                <textarea id="input-escritura" rows="3" placeholder="O escribe aquí..."></textarea>
-                <button onclick="guardarEscritura()" class="high-contrast-btn mt-3 bg-emerald-600 text-white" style="background-color: #059669; color: white;">💾 Guardar Texto</button>
+                <textarea id="input-escritura" rows="3" placeholder="O escribe aquí tus pensamientos..." aria-label="Escribir reflexión"></textarea>
+                <button onclick="guardarEscritura()" class="high-contrast-btn mt-3 bg-emerald-600 text-white" style="background-color: #059669; color: white;">💾 Guardar Texto Escrito</button>
             </div>
 
             <div id="lista-notas" class="space-y-4"></div>
@@ -164,85 +153,80 @@
             { t: "Luz en el Camino", c: "Salmos 119:105", m: "Tu palabra es lámpara a mis pies y lumbrera a mi camino." }
         ];
 
-        function obtenerDevocional(fecha) {
-            const inicio = new Date(fecha.getFullYear(), 0, 0);
-            const diff = fecha - inicio;
-            const dia = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const tema = temas[dia % temas.length];
-            return { titulo: tema.t, cita: tema.c, cuerpo: tema.m };
-        }
-
         let fechaActual = new Date();
         let fontSize = 20;
         let grabacionActiva = false;
         const synth = window.speechSynthesis;
         let recognition = null;
 
-        // Inicializar Reconocimiento con soporte para móviles
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.lang = 'es-ES';
-            recognition.continuous = false; // Cambiado a false para mejor estabilidad en móviles
-            recognition.interimResults = false;
+        // Función para inicializar/re-inicializar el reconocimiento
+        function initRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return null;
 
-            recognition.onstart = () => {
+            const rec = new SpeechRecognition();
+            rec.lang = 'es-ES';
+            rec.continuous = false;
+            rec.interimResults = false;
+
+            rec.onstart = () => {
                 grabacionActiva = true;
                 actualizarBotonGrabacion(true);
-                anunciar("Escuchando. Hable ahora.");
+                // No anunciamos por voz AQUÍ para no interferir con la grabación
             };
 
-            recognition.onresult = (event) => {
-                // Extraer el texto de manera segura
+            rec.onresult = (event) => {
                 if (event.results.length > 0) {
                     const texto = event.results[0][0].transcript;
-                    if (texto.trim().length > 0) {
+                    if (texto.trim()) {
                         guardarNota(texto, 'voz');
                     }
                 }
             };
 
-            recognition.onend = () => {
+            rec.onerror = (event) => {
+                console.error("Error Speech:", event.error);
+                grabacionActiva = false;
+                actualizarBotonGrabacion(false);
+                if (event.error !== 'no-speech') {
+                    anunciar("Error de micrófono. Intente de nuevo.");
+                }
+            };
+
+            rec.onend = () => {
                 grabacionActiva = false;
                 actualizarBotonGrabacion(false);
             };
 
-            recognition.onerror = (event) => {
-                console.error("Error de reconocimiento:", event.error);
-                grabacionActiva = false;
-                actualizarBotonGrabacion(false);
-                
-                if(event.error === 'not-allowed') {
-                    anunciar("Debe permitir el acceso al micrófono en los ajustes de su móvil.");
-                } else if (event.error === 'no-speech') {
-                    anunciar("No se detectó voz. Intente de nuevo.");
-                } else {
-                    anunciar("Hubo un error al grabar.");
-                }
-            };
+            return rec;
         }
 
         window.onload = () => {
             actualizarInterfaz();
-            anunciar("Aplicación lista.");
+            anunciar("Sistema de devocional iniciado.");
         };
 
         function gestionarDictado() {
+            // Cancelamos cualquier lectura actual para que el micro no capte la voz del móvil
+            synth.cancel();
+
+            if (grabacionActiva) {
+                if (recognition) recognition.stop();
+                return;
+            }
+
+            // Re-instanciamos para asegurar un objeto limpio en móvil
+            recognition = initRecognition();
+            
             if (!recognition) {
-                anunciar("Este navegador no soporta grabación de voz.");
+                anunciar("Su navegador no permite grabación.");
                 return;
             }
 
             try {
-                if (grabacionActiva) {
-                    recognition.stop();
-                } else {
-                    // Reiniciamos por seguridad
-                    synth.cancel(); 
-                    recognition.start();
-                }
+                recognition.start();
             } catch (e) {
-                console.error("Excepción en reconocimiento:", e);
+                console.error("Error al iniciar:", e);
                 recognition.stop();
             }
         }
@@ -254,13 +238,71 @@
 
             if (estaGrabando) {
                 btn.classList.add('recording-active');
-                texto.innerText = "Detener y Guardar";
-                status.innerText = "● GRABANDO...";
+                texto.innerText = "Parar y Guardar";
+                status.innerText = "● ESCUCHANDO...";
             } else {
                 btn.classList.remove('recording-active');
-                texto.innerText = "Toca para Grabar";
+                texto.innerText = "Tocar para Hablar";
                 status.innerText = "";
             }
+        }
+
+        function guardarNota(texto, tipo) {
+            const iso = fechaActual.toISOString().split('T')[0];
+            const db = JSON.parse(localStorage.getItem('dev_v4_storage') || '{}');
+            
+            if (!db[iso]) db[iso] = [];
+            
+            db[iso].push({ 
+                id: Date.now(), 
+                texto: texto, 
+                tipo: tipo, 
+                hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
+            });
+            
+            localStorage.setItem('dev_v4_storage', JSON.stringify(db));
+            cargarNotas();
+            anunciar("Nota guardada.");
+        }
+
+        function cargarNotas() {
+            const iso = fechaActual.toISOString().split('T')[0];
+            const db = JSON.parse(localStorage.getItem('dev_v4_storage') || '{}');
+            const notas = db[iso] || [];
+            const lista = document.getElementById('lista-notas');
+            
+            lista.innerHTML = notas.length ? '' : '<p class="text-center opacity-50 text-xl py-4">Sin notas hoy.</p>';
+            
+            notas.slice().reverse().forEach(n => {
+                const div = document.createElement('div');
+                div.className = 'note-card';
+                div.innerHTML = `
+                    <p class="text-yellow-500 font-bold mb-1">${n.tipo === 'voz' ? '🎤 Voz' : '✏️ Texto'} - ${n.hora}</p>
+                    <p class="text-2xl mb-3">${n.texto}</p>
+                    <div class="flex gap-6">
+                        <button onclick="anunciar('${n.texto}')" class="text-blue-400 font-black text-xl underline py-2">OÍR</button>
+                        <button onclick="borrarNota(${n.id})" class="text-red-500 font-black text-xl underline py-2">BORRAR</button>
+                    </div>
+                `;
+                lista.appendChild(div);
+            });
+        }
+
+        // --- Funciones de Utilidad ---
+        function obtenerDevocional(fecha) {
+            const dia = Math.floor((fecha - new Date(fecha.getFullYear(), 0, 0)) / 86400000);
+            const tema = temas[dia % temas.length];
+            return { titulo: tema.t, cita: tema.c, cuerpo: tema.m };
+        }
+
+        function actualizarInterfaz() {
+            const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
+            document.getElementById('fecha-display').innerText = fechaActual.toLocaleDateString('es-ES', opciones);
+            const contenido = obtenerDevocional(fechaActual);
+            document.getElementById('dev-titulo').innerText = contenido.titulo;
+            document.getElementById('dev-cita').innerText = contenido.cita;
+            document.getElementById('dev-cuerpo').innerText = contenido.cuerpo;
+            cargarNotas();
         }
 
         function navegarFecha(dias) {
@@ -273,16 +315,6 @@
             fechaActual = new Date();
             actualizarInterfaz();
             anunciar("Hoy.");
-        }
-
-        function actualizarInterfaz() {
-            const opciones = { weekday: 'short', day: 'numeric', month: 'short' };
-            document.getElementById('fecha-display').innerText = fechaActual.toLocaleDateString('es-ES', opciones);
-            const contenido = obtenerDevocional(fechaActual);
-            document.getElementById('dev-titulo').innerText = contenido.titulo;
-            document.getElementById('dev-cita').innerText = contenido.cita;
-            document.getElementById('dev-cuerpo').innerText = contenido.cuerpo;
-            cargarNotas();
         }
 
         function leerDevocional() {
@@ -302,16 +334,14 @@
 
         function detenerVoz() {
             synth.cancel();
-            if (grabacionActiva) {
-                recognition.stop();
-            }
+            if (grabacionActiva && recognition) recognition.stop();
         }
 
         function cambiarFuente(delta) {
             fontSize += delta;
-            fontSize = Math.max(16, Math.min(50, fontSize));
+            fontSize = Math.max(16, Math.min(60, fontSize));
             document.body.style.fontSize = fontSize + 'px';
-            anunciar("Tamaño ajustado.");
+            anunciar("Tamaño de letra cambiado.");
         }
 
         function guardarEscritura() {
@@ -319,69 +349,16 @@
             if (texto) {
                 guardarNota(texto, 'escrito');
                 document.getElementById('input-escritura').value = '';
-            } else {
-                anunciar("El campo está vacío.");
-            }
-        }
-
-        function guardarNota(texto, tipo) {
-            try {
-                const iso = fechaActual.toISOString().split('T')[0];
-                const db = JSON.parse(localStorage.getItem('dev_m_v3') || '{}');
-                
-                if (!db[iso]) db[iso] = [];
-                
-                const nuevaNota = { 
-                    id: Date.now(), 
-                    texto: texto, 
-                    tipo: tipo, 
-                    hora: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) 
-                };
-                
-                db[iso].push(nuevaNota);
-                localStorage.setItem('dev_m_v3', JSON.stringify(db));
-                
-                cargarNotas();
-                anunciar("Grabación guardada correctamente.");
-            } catch (e) {
-                console.error("Error al guardar:", e);
-                anunciar("Error al guardar la nota.");
-            }
-        }
-
-        function cargarNotas() {
-            const iso = fechaActual.toISOString().split('T')[0];
-            const db = JSON.parse(localStorage.getItem('dev_m_v3') || '{}');
-            const notas = db[iso] || [];
-            const lista = document.getElementById('lista-notas');
-            
-            if (notas.length === 0) {
-                lista.innerHTML = '<p class="text-center opacity-50 text-xl">Sin reflexiones guardadas hoy.</p>';
-            } else {
-                lista.innerHTML = '';
-                notas.slice().reverse().forEach(n => {
-                    const div = document.createElement('div');
-                    div.className = 'note-card';
-                    div.innerHTML = `
-                        <p class="text-yellow-500 font-bold mb-1" style="font-size: 1.1em">${n.tipo === 'voz' ? '🎤 Voz' : '✏️ Texto'} - ${n.hora}</p>
-                        <p class="text-xl mb-3">${n.texto}</p>
-                        <div class="flex gap-4">
-                            <button onclick="anunciar('${n.texto}')" class="text-blue-400 font-bold underline p-2" style="font-size: 1.2em">Oír</button>
-                            <button onclick="borrarNota(${n.id})" class="text-red-500 font-bold underline p-2" style="font-size: 1.2em">Borrar</button>
-                        </div>
-                    `;
-                    lista.appendChild(div);
-                });
             }
         }
 
         function borrarNota(id) {
             const iso = fechaActual.toISOString().split('T')[0];
-            const db = JSON.parse(localStorage.getItem('dev_m_v3') || '{}');
+            const db = JSON.parse(localStorage.getItem('dev_v4_storage') || '{}');
             db[iso] = db[iso].filter(n => n.id !== id);
-            localStorage.setItem('dev_m_v3', JSON.stringify(db));
+            localStorage.setItem('dev_v4_storage', JSON.stringify(db));
             cargarNotas();
-            anunciar("Nota eliminada.");
+            anunciar("Eliminado.");
         }
     </script>
 </body>
